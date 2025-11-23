@@ -16,7 +16,7 @@
     String errorMessage = (String) request.getAttribute("error");
 %>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Upload Image - Image Processor</title>
     <style>
@@ -157,12 +157,12 @@
     <!-- Processing Results Section -->
     <div class="results-section">
         <div class="results-header">
-            <h2 style="margin-top:0; color:#333;">Your Processing Results</h2>
-            <a href="UploadServlet" class="btn">🔄 Refresh</a>
+            <h2 style="margin-top:0; color:#333;display:flex;">Your Processing Results</h2>
+           <!-- <a href="UploadServlet" class="btn">🔄 Refresh</a> --> 
         </div>
         
         <% if (tasks != null && !tasks.isEmpty()) { %>
-            <p class="refresh-note">※ Page auto-refreshes every 0.5 seconds when tasks are processing</p>
+            <p class="refresh-note" style = "display:flex;">Page auto-refreshes every 0.5 seconds when tasks are processing</p>
             
             <%
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -182,21 +182,21 @@
                     <% if ("error".equals(task.getStatus())) { %>
                         <p style="color:red;"><strong>Error:</strong> <%=task.getErrorMessage()%></p>
                     <% } else if ("processing".equals(task.getStatus())) { %>
-                        <p style="color:blue;">🔄 Processing in progress...</p>
+                        <p style="color:blue;">Processing in progress...</p>
                     <% } else if ("pending".equals(task.getStatus())) { %>
-                        <p style="color:orange;">⏳ Waiting in queue...</p>
+                        <p style="color:orange;">Waiting in queue...</p>
                     <% } else if ("done".equals(task.getStatus())) { %>
                         <p style="color:green; margin-bottom:15px;">✓ Conversion completed!</p>
                         
                         <% if (task.getResultPath() != null) { %>
-                            <a href="DownloadServlet?file=<%=task.getResultPath()%>" class="btn btn-success">📥 Download ASCII File</a>
+                            <a href="DownloadServlet?file=<%=task.getResultPath()%>" class="btn btn-success">Download ASCII File</a>
                         <% } %>
                         
                         <!-- Image and ASCII Comparison -->
                         <div class="comparison-container">
                             <!-- Original Image -->
                             <div class="comparison-item">
-                                <h4>🖼️ Original Image</h4>
+                                <h4>Original Image</h4>
                                 <div class="original-image-container">
                                     <img src="ImageServlet?file=<%=task.getFilename()%>" alt="Original Image">
                                 </div>
@@ -204,7 +204,7 @@
                             
                             <!-- ASCII Result -->
                             <div class="comparison-item">
-                                <h4>🎨 ASCII Art Result</h4>
+                                <h4>ASCII Art Result</h4>
                                 <div class="ascii-result-container">
                                     <% if (task.getAsciiResult() != null) { %>
                                         <div class="ascii-result"><%=task.getAsciiResult()%></div>
