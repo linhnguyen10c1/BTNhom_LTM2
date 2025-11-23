@@ -1,6 +1,7 @@
 package controller;
 
 import java.io.*;
+import java.util.List;
 import javax.servlet.*;
 import javax.servlet.annotation.*;
 import javax.servlet.http.*;
@@ -13,6 +14,33 @@ import worker.TaskQueue;
 @WebServlet("/UploadServlet")
 @MultipartConfig(maxFileSize = 10 * 1024 * 1024) // 10MB
 public class UploadServlet extends HttpServlet {
+    
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        // Handle GET request - just show Upload.jsp with tasks list
+        Account account = (Account) request.getSession().getAttribute("account");
+        if (account == null) {
+            response.sendRedirect("Login.jsp");
+            return;
+        }
+        
+        // Load tasks for display
+        ImageTaskDAO taskDAO = new ImageTaskDAO();
+        List<ImageTask> tasks = taskDAO.getTasksByUserId(account.getId());
+        request.setAttribute("tasks", tasks);
+        
+        // Check for success/error messages from redirect
+        String message = request.getParameter("message");
+        if ("success".equals(message)) {
+            request.setAttribute("success", "File uploaded successfully! Processing in background...");
+        } else if ("error".equals(message)) {
+            String errorDetail = request.getParameter("detail");
+            request.setAttribute("error", errorDetail != null ? errorDetail : "Upload failed!");
+        }
+        
+        request.getRequestDispatcher("Upload.jsp").forward(request, response);
+    }
     
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -27,15 +55,15 @@ public class UploadServlet extends HttpServlet {
         String fileName = getFileName(filePart);
         
         if (fileName == null || fileName.isEmpty()) {
-            request.setAttribute("error", "Please select a file!");
-            request.getRequestDispatcher("Upload.jsp").forward(request, response);
+            response.sendRedirect("UploadServlet?message=error&detail=" + 
+                java.net.URLEncoder.encode("Please select a file!", "UTF-8"));
             return;
         }
         
         // Validate image file
         if (!isImageFile(fileName)) {
-            request.setAttribute("error", "Please select an image file!");
-            request.getRequestDispatcher("Upload.jsp").forward(request, response);
+            response.sendRedirect("UploadServlet?message=error&detail=" + 
+                java.net.URLEncoder.encode("Please select an image file!", "UTF-8"));
             return;
         }
         
@@ -58,17 +86,19 @@ public class UploadServlet extends HttpServlet {
             int taskId = taskDAO.createTask(task);
             
             if (taskId > 0) {
-            	TaskQueue.getInstance().enqueue(taskId);
-                response.sendRedirect("ResultServlet?message=uploaded");
+                TaskQueue.getInstance().enqueue(taskId);
+                
+                // ✅ FIX: Redirect instead of forward (PRG Pattern)
+                response.sendRedirect("UploadServlet?message=success");
             } else {
-                request.setAttribute("error", "Failed to create task!");
-                request.getRequestDispatcher("Upload.jsp").forward(request, response);
+                response.sendRedirect("UploadServlet?message=error&detail=" + 
+                    java.net.URLEncoder.encode("Failed to create task!", "UTF-8"));
             }
             
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "Upload failed: " + e.getMessage());
-            request.getRequestDispatcher("Upload.jsp").forward(request, response);
+            response.sendRedirect("UploadServlet?message=error&detail=" + 
+                java.net.URLEncoder.encode("Upload failed: " + e.getMessage(), "UTF-8"));
         }
     }
     
