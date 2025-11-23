@@ -10,11 +10,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Upload Image</title>
+    <title>Account Info</title>
 </head>
 <body style="text-align:center; margin-top:100px; font-family:Arial;">
     <h1>Welcome <%=account.getUsername()%> to Image Processor</h1>
     <p>Convert your images to ASCII art</p>
-    <a href="Login.jsp" style="padding:10px 20px; background:#007bff; color:white; text-decoration:none; border-radius:5px;">Upload</a>
+    <!-- ✅ FIX: Changed from Login.jsp to UploadServlet -->
+    <a href="UploadServlet" style="padding:10px 20px; background:#007bff; color:white; text-decoration:none; border-radius:5px;">Upload</a>
 </body>
 </html>

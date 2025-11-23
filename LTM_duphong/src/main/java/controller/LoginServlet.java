@@ -22,7 +22,8 @@ public class LoginServlet extends HttpServlet {
         
         if (account != null) {
             request.getSession().setAttribute("account", account);
-            response.sendRedirect("Upload.jsp");
+            // ✅ FIX: Redirect to UploadServlet instead of Upload.jsp
+            response.sendRedirect("UploadServlet");
         } else {
             request.setAttribute("error", "Invalid username or password!");
             request.getRequestDispatcher("Login.jsp").forward(request, response);

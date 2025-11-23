@@ -10,8 +10,13 @@
         return;
     }
     
-    // Get tasks list from request attribute (set by UploadServlet or on page load)
+    // ✅ FIX: If tasks is null, redirect to UploadServlet to load data
     List<ImageTask> tasks = (List<ImageTask>) request.getAttribute("tasks");
+    if (tasks == null) {
+        response.sendRedirect("UploadServlet");
+        return;
+    }
+    
     String successMessage = (String) request.getAttribute("success");
     String errorMessage = (String) request.getAttribute("error");
 %>
@@ -53,12 +58,11 @@
         .no-tasks { text-align:center; margin-top:50px; color:#666; }
     </style>
     <script>
-        // ✅ IMPROVED: Auto refresh every 0.5 seconds if there are pending/processing tasks
+        // Auto refresh every 0.5 seconds if there are pending/processing tasks
         function checkAutoRefresh() {
             const pendingTasks = document.querySelectorAll('.status-pending, .status-processing');
             if (pendingTasks.length > 0) {
                 setTimeout(function() {
-                    // Reload without triggering POST resubmission (because we now use redirect)
                     window.location.href = 'UploadServlet';
                 }, 500); // 0.5s
             }
@@ -104,7 +108,7 @@
             <a href="UploadServlet" class="btn">🔄 Refresh</a>
         </div>
         
-        <% if (tasks != null && !tasks.isEmpty()) { %>
+        <% if (!tasks.isEmpty()) { %>
             <p class="refresh-note">※ Page auto-refreshes every 0.5 seconds when tasks are processing</p>
             
             <%
