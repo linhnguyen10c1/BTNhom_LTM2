@@ -10,13 +10,8 @@
         return;
     }
     
-    // ✅ FIX: If tasks is null, redirect to UploadServlet to load data
+    // Get tasks list from request attribute (set by UploadServlet or on page load)
     List<ImageTask> tasks = (List<ImageTask>) request.getAttribute("tasks");
-    if (tasks == null) {
-        response.sendRedirect("UploadServlet");
-        return;
-    }
-    
     String successMessage = (String) request.getAttribute("success");
     String errorMessage = (String) request.getAttribute("error");
 %>
@@ -50,12 +45,70 @@
         .status-processing { border-left:4px solid blue; }
         .status-done { border-left:4px solid green; }
         .status-error { border-left:4px solid red; }
-        .ascii-result { background:#f5f5f5; padding:10px; font-family:monospace; white-space:pre-wrap; max-height:200px; overflow:auto; margin:10px 0; }
+        
+        /* Image and ASCII comparison layout */
+        .comparison-container {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            align-items: flex-start;
+        }
+        
+        .comparison-item {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .comparison-item h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .original-image-container {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .original-image-container img {
+            max-width: 300px;
+            max-height: 300px;
+            width: auto;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+        }
+        
+        .ascii-result-container {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .ascii-result {
+            background: #fff;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre;
+            overflow: auto;
+            font-size: 5px;
+            line-height: 5px;
+            text-align: left;
+            border: 1px solid #ccc;
+        }
+        
         .btn { padding:8px 16px; background:#007bff; color:white; text-decoration:none; border-radius:5px; margin:5px; display:inline-block; }
         .btn-success { background:#28a745; }
         .btn-danger { background:#dc3545; }
         .refresh-note { color:#666; font-style:italic; text-align:center; }
         .no-tasks { text-align:center; margin-top:50px; color:#666; }
+        
+        .task-info { margin-bottom: 15px; }
+        .task-info p { margin: 5px 0; }
     </style>
     <script>
         // Auto refresh every 0.5 seconds if there are pending/processing tasks
@@ -64,7 +117,7 @@
             if (pendingTasks.length > 0) {
                 setTimeout(function() {
                     window.location.href = 'UploadServlet';
-                }, 500); // 0.5s
+                }, 500);
             }
         }
         window.onload = checkAutoRefresh;
@@ -79,13 +132,13 @@
     <!-- Error/Success Messages -->
     <% if (errorMessage != null) { %>
         <div class="message error-message">
-            <strong>❌ Error:</strong> <%=errorMessage%>
+            <strong>× Error:</strong> <%=errorMessage%>
         </div>
     <% } %>
     
     <% if (successMessage != null) { %>
         <div class="message success-message">
-            <strong>✅ Success:</strong> <%=successMessage%>
+            <strong>✓ Success:</strong> <%=successMessage%>
         </div>
     <% } %>
     
@@ -108,7 +161,7 @@
             <a href="UploadServlet" class="btn">🔄 Refresh</a>
         </div>
         
-        <% if (!tasks.isEmpty()) { %>
+        <% if (tasks != null && !tasks.isEmpty()) { %>
             <p class="refresh-note">※ Page auto-refreshes every 0.5 seconds when tasks are processing</p>
             
             <%
@@ -116,13 +169,15 @@
                 for (ImageTask task : tasks) {
             %>
                 <div class="task status-<%=task.getStatus()%>">
-                    <h3><%=task.getFilename()%></h3>
-                    <p><strong>Status:</strong> <%=task.getStatus().toUpperCase()%></p>
-                    <p><strong>Uploaded:</strong> <%=sdf.format(task.getCreatedAt())%></p>
-                    
-                    <% if (task.getCompletedAt() != null) { %>
-                        <p><strong>Completed:</strong> <%=sdf.format(task.getCompletedAt())%></p>
-                    <% } %>
+                    <div class="task-info">
+                        <h3 style="margin:0 0 10px 0;"><%=task.getFilename()%></h3>
+                        <p><strong>Status:</strong> <%=task.getStatus().toUpperCase()%></p>
+                        <p><strong>Uploaded:</strong> <%=sdf.format(task.getCreatedAt())%></p>
+                        
+                        <% if (task.getCompletedAt() != null) { %>
+                            <p><strong>Completed:</strong> <%=sdf.format(task.getCompletedAt())%></p>
+                        <% } %>
+                    </div>
                     
                     <% if ("error".equals(task.getStatus())) { %>
                         <p style="color:red;"><strong>Error:</strong> <%=task.getErrorMessage()%></p>
@@ -131,16 +186,34 @@
                     <% } else if ("pending".equals(task.getStatus())) { %>
                         <p style="color:orange;">⏳ Waiting in queue...</p>
                     <% } else if ("done".equals(task.getStatus())) { %>
-                        <p style="color:green;">✅ Conversion completed!</p>
+                        <p style="color:green; margin-bottom:15px;">✓ Conversion completed!</p>
                         
                         <% if (task.getResultPath() != null) { %>
                             <a href="DownloadServlet?file=<%=task.getResultPath()%>" class="btn btn-success">📥 Download ASCII File</a>
                         <% } %>
                         
-                        <% if (task.getAsciiResult() != null) { %>
-                            <h4>ASCII Art Preview:</h4>
-                            <div class="ascii-result"><%=task.getAsciiResult()%></div>
-                        <% } %>
+                        <!-- Image and ASCII Comparison -->
+                        <div class="comparison-container">
+                            <!-- Original Image -->
+                            <div class="comparison-item">
+                                <h4>🖼️ Original Image</h4>
+                                <div class="original-image-container">
+                                    <img src="ImageServlet?file=<%=task.getFilename()%>" alt="Original Image">
+                                </div>
+                            </div>
+                            
+                            <!-- ASCII Result -->
+                            <div class="comparison-item">
+                                <h4>🎨 ASCII Art Result</h4>
+                                <div class="ascii-result-container">
+                                    <% if (task.getAsciiResult() != null) { %>
+                                        <div class="ascii-result"><%=task.getAsciiResult()%></div>
+                                    <% } else { %>
+                                        <p style="color:#999;">ASCII result not available</p>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
                     <% } %>
                 </div>
             <%
