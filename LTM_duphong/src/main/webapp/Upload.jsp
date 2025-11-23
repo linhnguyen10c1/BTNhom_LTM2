@@ -53,13 +53,14 @@
         .no-tasks { text-align:center; margin-top:50px; color:#666; }
     </style>
     <script>
-        // Auto refresh every 10 seconds if there are pending/processing tasks
+        // ✅ IMPROVED: Auto refresh every 20 seconds (increased from 10s) if there are pending/processing tasks
         function checkAutoRefresh() {
             const pendingTasks = document.querySelectorAll('.status-pending, .status-processing');
             if (pendingTasks.length > 0) {
                 setTimeout(function() {
-                    location.reload();
-                }, 10000);
+                    // Reload without triggering POST resubmission (because we now use redirect)
+                    window.location.href = 'UploadServlet';
+                }, 20000); // 20 seconds
             }
         }
         window.onload = checkAutoRefresh;
@@ -100,11 +101,11 @@
     <div class="results-section">
         <div class="results-header">
             <h2 style="margin-top:0; color:#333;">Your Processing Results</h2>
-            <a href="javascript:location.reload()" class="btn">🔄 Refresh</a>
+            <a href="UploadServlet" class="btn">🔄 Refresh</a>
         </div>
         
         <% if (tasks != null && !tasks.isEmpty()) { %>
-            <p class="refresh-note">※ Page auto-refreshes every 10 seconds when tasks are processing</p>
+            <p class="refresh-note">※ Page auto-refreshes every 20 seconds when tasks are processing</p>
             
             <%
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

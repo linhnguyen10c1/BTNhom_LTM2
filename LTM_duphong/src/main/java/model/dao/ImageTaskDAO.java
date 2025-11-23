@@ -78,6 +78,37 @@ public class ImageTaskDAO {
         return tasks;
     }
     
+    // ✅ NEW METHOD: Chỉ query tasks đang active (pending/processing) - Tối ưu cho auto-reload
+    public List<ImageTask> getActiveTasksByUserId(int userId) {
+        List<ImageTask> tasks = new ArrayList<>();
+        String sql = "SELECT * FROM image_tasks WHERE user_id=? AND status IN ('pending', 'processing') ORDER BY created_at DESC";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                ImageTask task = new ImageTask();
+                task.setId(rs.getInt("id"));
+                task.setUserId(rs.getInt("user_id"));
+                task.setFilename(rs.getString("filename"));
+                task.setOriginalPath(rs.getString("original_path"));
+                task.setStatus(rs.getString("status"));
+                task.setAsciiResult(rs.getString("ascii_result"));
+                task.setResultPath(rs.getString("result_path"));
+                task.setCreatedAt(rs.getTimestamp("created_at"));
+                task.setCompletedAt(rs.getTimestamp("completed_at"));
+                task.setErrorMessage(rs.getString("error_message"));
+                tasks.add(task);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return tasks;
+    }
+    
     public ImageTask getPendingTask() {
         String sql = "SELECT * FROM image_tasks WHERE status='pending' ORDER BY created_at ASC LIMIT 1";
         
@@ -100,6 +131,7 @@ public class ImageTaskDAO {
         }
         return null;
     }
+    
     public ImageTask getTaskById(int id) {
         ImageTask task = null;
         String sql = "SELECT * FROM image_tasks WHERE id = ?";

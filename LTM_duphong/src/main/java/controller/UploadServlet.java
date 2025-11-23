@@ -30,6 +30,15 @@ public class UploadServlet extends HttpServlet {
         List<ImageTask> tasks = taskDAO.getTasksByUserId(account.getId());
         request.setAttribute("tasks", tasks);
         
+        // Check for success/error messages from redirect
+        String message = request.getParameter("message");
+        if ("success".equals(message)) {
+            request.setAttribute("success", "File uploaded successfully! Processing in background...");
+        } else if ("error".equals(message)) {
+            String errorDetail = request.getParameter("detail");
+            request.setAttribute("error", errorDetail != null ? errorDetail : "Upload failed!");
+        }
+        
         request.getRequestDispatcher("Upload.jsp").forward(request, response);
     }
     
@@ -46,23 +55,15 @@ public class UploadServlet extends HttpServlet {
         String fileName = getFileName(filePart);
         
         if (fileName == null || fileName.isEmpty()) {
-            // Load tasks and show error
-            ImageTaskDAO taskDAO = new ImageTaskDAO();
-            List<ImageTask> tasks = taskDAO.getTasksByUserId(account.getId());
-            request.setAttribute("tasks", tasks);
-            request.setAttribute("error", "Please select a file!");
-            request.getRequestDispatcher("Upload.jsp").forward(request, response);
+            response.sendRedirect("UploadServlet?message=error&detail=" + 
+                java.net.URLEncoder.encode("Please select a file!", "UTF-8"));
             return;
         }
         
         // Validate image file
         if (!isImageFile(fileName)) {
-            // Load tasks and show error
-            ImageTaskDAO taskDAO = new ImageTaskDAO();
-            List<ImageTask> tasks = taskDAO.getTasksByUserId(account.getId());
-            request.setAttribute("tasks", tasks);
-            request.setAttribute("error", "Please select an image file!");
-            request.getRequestDispatcher("Upload.jsp").forward(request, response);
+            response.sendRedirect("UploadServlet?message=error&detail=" + 
+                java.net.URLEncoder.encode("Please select an image file!", "UTF-8"));
             return;
         }
         
@@ -87,27 +88,17 @@ public class UploadServlet extends HttpServlet {
             if (taskId > 0) {
                 TaskQueue.getInstance().enqueue(taskId);
                 
-                // Load tasks and show success message
-                List<ImageTask> tasks = taskDAO.getTasksByUserId(account.getId());
-                request.setAttribute("tasks", tasks);
-                request.setAttribute("success", "File uploaded successfully! Processing in background...");
-                request.getRequestDispatcher("Upload.jsp").forward(request, response);
+                // ✅ FIX: Redirect instead of forward (PRG Pattern)
+                response.sendRedirect("UploadServlet?message=success");
             } else {
-                // Load tasks and show error
-                List<ImageTask> tasks = taskDAO.getTasksByUserId(account.getId());
-                request.setAttribute("tasks", tasks);
-                request.setAttribute("error", "Failed to create task!");
-                request.getRequestDispatcher("Upload.jsp").forward(request, response);
+                response.sendRedirect("UploadServlet?message=error&detail=" + 
+                    java.net.URLEncoder.encode("Failed to create task!", "UTF-8"));
             }
             
         } catch (Exception e) {
             e.printStackTrace();
-            // Load tasks and show error
-            ImageTaskDAO taskDAO = new ImageTaskDAO();
-            List<ImageTask> tasks = taskDAO.getTasksByUserId(account.getId());
-            request.setAttribute("tasks", tasks);
-            request.setAttribute("error", "Upload failed: " + e.getMessage());
-            request.getRequestDispatcher("Upload.jsp").forward(request, response);
+            response.sendRedirect("UploadServlet?message=error&detail=" + 
+                java.net.URLEncoder.encode("Upload failed: " + e.getMessage(), "UTF-8"));
         }
     }
     
